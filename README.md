@@ -1,4 +1,4 @@
-# 📈 Change Point Detection & Volatility-Based Trading Strategy
+# 📈 Change Point Detection
 
 This project implements an **online change point detection (CPD)** system for financial time series using both parametric and non-parametric methods. The app runs via a Streamlit dashboard.
 
