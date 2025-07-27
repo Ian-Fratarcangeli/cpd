@@ -1,0 +1,27 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.ipynb_checkpoints
+
+# Virtual environments
+.venv/
+.env/
+venv/
+.openbbenv/
+
+# Environment variable files
+.env
+
+# MacOS
+.DS_Store
+
+# VS Code settings
+.vscode/
+
+# Streamlit cache
+.streamlit/
+
+# Data or export files
+*.csv
+*.json
+*.xlsx
