@@ -16,14 +16,14 @@ from pandas.tseries.offsets import BDay
 st.title("Online CUSUM Change Point Detection")
 
 st.header("Introduction")
-st.write("""Many times when looking at financial data, we ask ourselves "Is this volatility just noise or a shift in the market?".
-          Change point detection (CPD) attempts to define points within time-series data where a true distribution change has occured. 
-         There are many different methods for CPD, and here we are going to test some different ways we can apply the CUSUM strategy. CUSUM 
+st.write("""Many times, when looking at financial data, we ask ourselves, "Is this volatility just noise or a shift in the market?"
+          Change point detection (CPD) attempts to define points within time-series data where a true distribution change has occurred. 
+         There are many different methods for CPD, and here we are going to test some different ways we can apply the Cumulative Sum Control Chart (CUSUM) technique. CUSUM 
          works to detect change points by accumulating evidence of distributional shift through a comparison function over sliding windows. A reference window is generated
          and compared to the new point at current time t (since this is online), producing some score of differentiation. When the scores sum above a 
-         certain threshold, we can define that point in time t as a change point and the process restarts. We are going to be looking at CUSUM applied with likelihood and kernel methodology.
-         Please use the symbol sidebar to input an equity of your choice and the date range to define the time the CUSUM will monitor. Feel free to play with the 
-         window size and alpha, which will be explained later.
+         certain threshold, we can define that point in time t as a change point, and the process restarts. We are going to be looking at CUSUM applied with likelihood and kernel methodology.
+         The symbol sidebar can be used input an equity of your choice and the date range to define the time the CUSUM will monitor. The window size and alpha, 
+         which will be explained more in depth later, can also be adjusted.
 """)
 symbol = st.sidebar.text_input("Symbol", "SPY")
 today = datetime.today().strftime("%Y-%m-%d")
@@ -80,7 +80,7 @@ features = scaler.fit_transform(features_unscaled)
 st.header("Data")
 st.write("""Pictured below is a sample of the feature data we will be using for CPD over the given time period.
           The features are calculated from yfinance equity price history and are given a standard transform. As you can see, most of the features have some relation to volatility,
-         so the change points outputted are more telling of rapid changes in volatility that don't line up with prior data.""")
+         so the output change points provide timestamps of rapid changes in volatility that aren't characteristic with prior data.""")
 
 feature_descriptions = {
     "vol_5d": "5-day rolling standard deviation of log returns",
@@ -100,19 +100,19 @@ st.subheader("Feature Descriptions")
 st.dataframe(desc_df, use_container_width=True)
 ###THIS IS THE LIKELIHOOD BASED CUSUM
 st.header("Likelihood based CUSUM")
-st.write("""A log likelihood ratio function is used to compute a score that represents the likelihood a new point doesn't belong in the prior distribution 
-         and instead a new distribution, given a shared covariance. The log likelihood ratio is a parametric method, meaning that to calculate likelihood we require a covariance,
-         a mean for the prior distribution, and a mean for the new distribution. The covariance is generated from the prior distribution, which is just the 
-         data in the reference window. We can then initialize the new distribution mean as the prior distribution mean and update it over time as we see more data.
-         The new distribution mean is updated using exponential weighted moving average (EWMA) with an alpha hyperparameter you can play with.
-         The issue we run into here is that the assumptions we made for covariance and means may not be true. It is very possible that the true mean for this distribution 
+st.write("""A log likelihood ratio function is used to compute a score that represents the likelihood that a new point doesn't belong in the prior distribution 
+         and instead a new distribution, given a shared covariance. The log likelihood ratio is a parametric method; to calculate likelihood, a covariance,
+         a mean for the prior distribution, and a mean for the new distribution are required. The covariance is generated from the prior distribution, which is the 
+         data seen in the reference window. We can then initialize the new distribution mean as the prior distribution mean and update it over time as we see more data.
+         The new distribution mean is updated using exponential weighted moving average (EWMA) with an alpha hyperparameter that can be adjusted.
+         A potential issue here is that the assumptions we made for covariance and means may not be true. It is very possible that the true mean for this distribution 
          is not what we have estimated from our prior distribution window, resulting in inaccurate likelihood scores and consequently false change points.
 """)
 st.write("""As the likelihood scores sum, the CUSUM algorithm compares it to a threshold to see if there is a change point at that time. 
          As a result, the threshold is extremely significant and needs to be designated in order to best avoid false positives and true negatives. 
          To do this, a geometric brownian motion with a distributional shift has been generated and the relevant features calculated to fit the data we want. 
          This data is sent to the likelihood CUSUM and scores are produced to give a better idea of how the method reacts to financial equity price data (GBM is considered a good simulation of financial data).
-         From here, the 99th percentile of scores is used as the threshold score.
+         The 99th percentile of scores is then used as the threshold score.
 """)
 cp = 250
 n = 500
@@ -173,10 +173,10 @@ else:
 
 ###THIS IS THE KERNEL BASED CUSUM
 st.header("Kernel based CUSUM")
-st.write("""The parametric method above forced us to make assumptions on the distribution. Kernel based methods are non-parametric, meaning we can make conclusions
-         without having to estimate any distributional parameters. Maximum Mean Disrepancy (MMD) is the kernel based method chosen, which takes the reference window and new point
+st.write("""The parametric method above forced us to make assumptions on the distribution. Kernel based methods are non-parametric, meaning conclusions
+         can be drawn without having to estimate any distributional parameters. Maximum Mean Disrepancy (MMD) is the kernel-based method chosen, which takes the reference window and new point
          and maps them both to Reproducing Kernel Hilbert Space. Essentially, MMD is measuring the distance between the reference probability distribution and the new point.
-         This method requires a parameter for kernel bandwith (how much each point matters), gamma, which is created using the median heuristic method derived from euclidean distances.
+         This method requires a parameter for kernel bandwith (gamma) describing how much each point matters, which is created using the median heuristic method derived from euclidean distances.
 """)
 dists = pairwise_distances(features, metric='euclidean')
 # Get the upper triangle, excluding the diagonal
@@ -236,8 +236,8 @@ else:
     st.subheader("No change points detected.")
 
 st.header("Discussion")
-st.write("""I think the kernel method outperformed the likelihood method because it was able to pick up on big market changes from my testing (COVID, Tariffs, etc.)
-         without producing as many false positives as the likelihood method. My assumption is the covariance we estimated for the parametric method was not a very good
-         representation of the market distribution (probably more variance than estimated), so new data was seen as less likely than it should have been 
-         and as a result more change points occured. This project certainly demonstrates the power of non-parametric methods on financial time-series. Since both these
+st.write("""I think the kernel method outperformed the likelihood method because it was able to better detect big market changes from my testing (COVID, Tariffs, etc.)
+         without producing as many false positives as the likelihood method. My assumption is that the covariance estimated for the parametric method was not a very good
+         representation of the market distribution; it probably underestimated the market variance. Because of this, new data was seen as less likely than it should have been, 
+         resulting in the occurrence of more change points. This project certainly demonstrates the power of non-parametric methods on financial time-series. Since both these
          methods are online, it is possible that their change points could serve as legitimate trading signals.""")
